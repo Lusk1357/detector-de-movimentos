@@ -13,8 +13,8 @@ def iniciar_camera():
         raise RuntimeError("Câmera não disponível")
 
     # Configurações ESSENCIAIS (evite muitas alterações)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     
     # Inicialização LEVE do MediaPipe
     hands = mp.solutions.hands.Hands(

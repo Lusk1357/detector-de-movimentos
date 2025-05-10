@@ -13,3 +13,6 @@ trajetoria_padrao = []
 # Configuração inicial do fundo
 mostrar_fundo_preto = True 
 
+
+
+

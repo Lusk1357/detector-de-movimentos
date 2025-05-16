@@ -1,43 +1,70 @@
 import config
-from utils import calcular_similaridade
+from utils import calcular_similaridade as cs
 import numpy as np
+import time
 
-def processar_mão(frame, resultados):
-    """Captura pontos da mão com filtro de movimento mínimo"""
-    h, w = frame.shape[:2]
-    indicador_presente = False
+#alpha(media ponderada) --> suavilização, deley --> tempo de inicio
+class Trajetoria:
+    def __init__(self, alpha=0.3, delay=1.5):
+        self.alpha = alpha
+        self.delay = delay
+        self.tempo_inicial = None
+        self.iniciou_desenho = False
 
-    if resultados and resultados.multi_hand_landmarks:
-        for hand_landmarks in resultados.multi_hand_landmarks:
-            landmark = hand_landmarks.landmark[8]  # Ponta do dedo indicador
-            x, y = landmark.x, landmark.y
-            
-            # Filtro: só adiciona se mover >1% da tela
-            if (not config.trajetoria_atual or 
-                np.linalg.norm([x-config.trajetoria_atual[-1][0], 
-                               y-config.trajetoria_atual[-1][1]]) > 0.001):
-                config.trajetoria_atual.append((x, y))
+        self.trajetoria_atual = config.trajetoria_atual
+        self.trajetoria_padrao = config.trajetoria_padrao
+
+    # detecta o dedo indicador/ aplica suavização
+    def processar_mao(self, frame, resultados):
+        h, w = frame.shape[:2]
+        indicador_presente = False
+
+        if resultados and resultados.multi_hand_landmarks:
+            for hand_landmarks in resultados.multi_hand_landmarks:
+                landmark = hand_landmarks.landmark[8]
+                x, y = landmark.x, landmark.y
                 indicador_presente = True
 
-    return frame, indicador_presente
+                if self.tempo_inicial is None:
+                    self.tempo_inicial = time.time()
+                    self.iniciou_desenho = False
 
-def salvar_trajetoria():
-    """Salva a trajetória atual (sem normalização)"""
-    if config.trajetoria_atual:
-        config.trajetoria_padrao = config.trajetoria_atual.copy()
-        config.trajetoria_atual.clear()
-        return True
-    return False
+                elif not self.iniciou_desenho and (time.time() - self.tempo_inicial >= self.delay_inicio):
+                    self.iniciou_desenho = True
 
-def comparar_trajetoria():
-    """Compara trajetórias usando a função do utils"""
-    if not config.trajetoria_padrao or len(config.trajetoria_atual) < 5:
-        return 0.0
-    return calcular_similaridade(config.trajetoria_atual, config.trajetoria_padrao)
+                if self.iniciou_desenho:
+                    if self.trajetoria_atual:
+                        x_ant, y_ant = self.trajetoria_atual[-1]
+                        x_suave = self.alpha * x + (1 - self.alpha) * x_ant
+                        y_suave = self.alpha * y + (1 - self.alpha) * y_ant
 
-def resetar_trajetoria(tipo='atual'):
-    """Reseta trajetórias seletivamente"""
-    if tipo == 'padrao':
-        config.trajetoria_padrao.clear()
-    else:
-        config.trajetoria_atual.clear()
+                        if np.linalg.norm([x_suave - x_ant, y_suave - y_ant]) > 0.001:
+                            self.trajetoria_atual.append((x_suave, y_suave))
+                    else:
+                        self.trajetoria_atual.append((x, y))
+        else:
+            self.tempo_inicial = None
+            self.iniciou_desenho = False
+
+        return frame, indicador_presente
+
+    def salvar_trajetoria(self):
+        if self.trajetoria_atual:
+            self.trajetoria_padrao[:] = self.trajetoria_atual[:]
+            self.trajetoria_atual.clear()
+            return True
+        return False
+
+    def resetar_trajetoria(self, tipo='atual'):
+        if tipo == 'padrao':
+            self.trajetoria_padrao.clear()
+        else:
+            self.trajetoria_atual.clear()
+
+    # usa a função calcular_similaridade
+    def comparar_trajetoria(self):
+        if not self.trajetoria_padrao or len(self.trajetoria_atual) < 5:
+            return 0.0
+        similaridade = cs(self.trajetoria_atual, self.trajetoria_padrao)
+        self.resetar_trajetoria()
+        return similaridade

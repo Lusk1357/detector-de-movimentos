@@ -1,12 +1,12 @@
 from camera import init_camera
-from trajeto import Trajetoria
+from trajeto import trajetoria
 from desenho import criar_fundo, desenhar_trajetoria, mostrar_texto
 import config
 import cv2
 from time import time, sleep
 
 # a ser removido futuramente
-class FPSController:
+"""class FPSController:
     def __init__(self, alvo=60):
         self.alvo = alvo
         self.ultimo = time()
@@ -27,19 +27,19 @@ class FPSController:
         tempo_esperado = 1 / self.alvo
         tempo_decorrido = time() - self.ultimo
         if tempo_decorrido < tempo_esperado:
-            sleep(tempo_esperado - tempo_decorrido)
+            sleep(tempo_esperado - tempo_decorrido)"""
 
 def main():
     cap, capturar_frame = init_camera()
-    trajeto = Trajetoria(alpha=0.3, delay_inicio=1.5)
-    fps = FPSController(60)
+    trajeto = trajetoria(alpha=0.3, delay=1.5)
+    #fps = FPSController(60)
     mensagem = {"texto": "", "tempo": 0}
 
     #Loop principal
     try:
         while True:
-            fps.esperar_proximo_frame()
-            fps_atual = fps.atualizar()
+            #fps.esperar_proximo_frame()
+            #fps_atual = fps.atualizar()
 
             ret, frame, resultados = capturar_frame()
             if not ret:
@@ -55,11 +55,11 @@ def main():
             desenhar_trajetoria(frame_exibicao)
 
             #FPS
-            mostrar_texto(frame_exibicao, f"FPS: {int(fps_atual)}", (10, 30))
+            #mostrar_texto(frame_exibicao, f"FPS: {int(fps_atual)}", (10, 30))
 
             #mensagens temporárias
-            if time.time() - mensagem["tempo"] < 2:
-                mostrar_texto(frame_exibicao, mensagem["texto"], (10, 60))
+            if time() - mensagem["tempo"] < 2:
+                mostrar_texto(frame_exibicao, mensagem["texto"], (10, 30))
 
             # Instruções
             cv2.putText(frame_exibicao, "[G]ravar [C]omparar [R]esetar [F]undo [ESC]Sair",
@@ -75,22 +75,22 @@ def main():
             #Ação dos comandos do teclado
             elif key == ord('f'):
                 config.mostrar_fundo_preto = not config.mostrar_fundo_preto
-                mensagem = {"texto": f"Fundo: {'Preto' if config.mostrar_fundo_preto else 'Câmera'}", "tempo": time.time()}
+                mensagem = {"texto": f"Fundo: {'Preto' if config.mostrar_fundo_preto else 'Camera'}", "tempo": time()}
             elif key == ord('g') and indicador:
                 if trajeto.salvar_trajetoria():
-                    mensagem = {"texto": "Trajetória salva!", "tempo": time.time()}
+                    mensagem = {"texto": "Trajetoria salva!", "tempo": time()}
             elif key == ord('c') and indicador:
                 sim = trajeto.comparar_trajetoria()
-                mensagem = {"texto": f"Similaridade: {sim:.2f}%", "tempo": time.time()}
+                mensagem = {"texto": f"Similaridade: {sim:.2f}%", "tempo": time()}
             elif key == ord('r'):
                 trajeto.resetar_trajetoria()
-                mensagem = {"texto": "Resetado!", "tempo": time.time()}
+                mensagem = {"texto": "Resetado!", "tempo": time()}
 
     #finalização e encerramento dos recursos
     finally:
         cap.stop()
-        duracao = time.time() - fps.start_time
-        print(f"FPS médio: {fps.frame_count / duracao:.1f}")
+        """duracao = time() - fps.start_time
+        print(f"FPS médio: {fps.frame_count / duracao:.1f}")"""
 
 if __name__ == "__main__":
     main()

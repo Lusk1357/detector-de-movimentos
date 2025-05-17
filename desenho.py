@@ -27,5 +27,9 @@ def desenhar_trajetoria(frame):
             cv2.line(frame, pt1, pt2, (0, 255, 0), 3)  # Verde
 
 def mostrar_texto(frame, texto, posicao=(10, 30)):
-    cv2.putText(frame, texto, posicao, cv2.FONT_HERSHEY_SIMPLEX,
-                0.7, (255, 255, 255), 2)
+    if config.mostrar_fundo_preto:
+        cv2.putText(frame, texto, posicao, cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7, (255, 255, 255), 2) #branco
+    else:
+        cv2.putText(frame, texto, posicao, cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7, (0,0,0), 2) #preto
